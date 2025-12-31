@@ -8,9 +8,9 @@ from pathlib import Path
 # =========================
 LEFT_IMAGE_PATH = "cone0.png"
 RIGHT_IMAGE_PATH = "cone1.png"
-DISPARITY_8BIT_PATH = "cones_disparity_occlusion_filled_smoothed.png"  # disparity left->right (8-bit)
+DISPARITY_8BIT_PATH = "cones_disparity_occlusion_filled_smoothed.png"
 
-# IPOL mapping
+# IPOL
 DISP_MIN = -51
 DISP_MAX = -17
 
@@ -18,19 +18,17 @@ DISP_MAX = -17
 PIXEL_STRIDE = 2
 DISP_EPS = 1e-3
 
-# "Calib" minimale (peut rester relative si tu n'as pas mieux)
-# Important: la profondeur est Z = FX * BASELINE / d
 FX = 700.0
 FY = 700.0
-BASELINE = 0.12  # unités cohérentes avec Z (mètres conseillé)
+BASELINE = 0.12
 
-# Filtrage profondeur (évite les outliers extrêmes)
+# Filtrage profondeur
 Z_MIN = 0.01
 Z_MAX = 500.0
 
 # Prétraitement / ICP
-VOXEL_SCALES = [0.05, 0.02, 0.01]      # multi-échelle
-MAX_CORR_FACTORS = [3.0, 2.5, 2.0]     # max_corr = voxel * factor
+VOXEL_SCALES = [0.05, 0.02, 0.01]      
+MAX_CORR_FACTORS = [3.0, 2.5, 2.0]     
 ICP_ITERS = [60, 60, 80]
 
 # Sorties
@@ -42,7 +40,7 @@ OUT_MERGED = "cloud_merged.ply"
 OUT_T = "T_right_to_left.txt"
 
 # Debug / visualisation
-SHOW_WINDOWS = True  # mettre False si tu veux tout en batch
+SHOW_WINDOWS = True
 
 
 # =========================
@@ -94,8 +92,8 @@ def build_pointclouds_from_disp_lr(
     """
     h, w = disp8.shape
 
-    disp_raw = decode_disp(disp8)          # typiquement négatif chez toi
-    disp = (-disp_raw).astype(np.float32)  # maintenant d > 0 attendu (~[17..51])
+    disp_raw = decode_disp(disp8)          
+    disp = (-disp_raw).astype(np.float32)  
 
     cx, cy = (w - 1) / 2.0, (h - 1) / 2.0
     right_rgb = cv2.cvtColor(right_bgr, cv2.COLOR_BGR2RGB)
@@ -231,7 +229,6 @@ def multiscale_icp_point_to_plane(
 
 
 def pick_best(res_a, res_b):
-    # priorité: fitness, puis rmse
     if res_a.fitness > res_b.fitness:
         return res_a
     if res_b.fitness > res_a.fitness:
@@ -324,14 +321,14 @@ def main():
     print("Saved aligned right:")
     print(" -", (out / OUT_RIGHT_ALIGNED).resolve())
 
-    # Merge (optionnel mais très utile pour la suite + rapport)
+    # Merge
     merged = pcdL + pcdR_aligned
     merged = merged.voxel_down_sample(VOXEL_SCALES[-1])
     o3d.io.write_point_cloud(str(out / OUT_MERGED), merged)
     print("Saved merged cloud:")
     print(" -", (out / OUT_MERGED).resolve())
 
-    # Visualisation finale (downsample pour être fluide)
+    # Visualisation finale
     pcdL_vis = preprocess_pcd(pcdL, voxel_size=VOXEL_SCALES[-1])
     pcdR_vis = preprocess_pcd(pcdR_aligned, voxel_size=VOXEL_SCALES[-1])
     show_clouds([pcdL_vis, pcdR_vis], "After ICP (Right aligned to Left)")

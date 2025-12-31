@@ -1,16 +1,3 @@
-"""
-INFO-H518 — Part II (View Synthesis) — Q_V3 Metrics (PROXY mode only)
-
-Proxy strategy:
-- We synthesize a mid view (no real ground-truth mid image).
-- We reproject the synthesized mid-view back to the LEFT camera using the LEFT disparity.
-- We compare the reprojected image to the real LEFT image on valid pixels only.
-
-Metrics:
-- PSNR (RGB + Luma) on valid pixels
-- IV-PSNR-like shift-tolerant PSNR (RGB + Luma) using best error in a (2R+1)x(2R+1) window
-"""
-
 from __future__ import annotations
 
 import math
@@ -23,38 +10,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# ============================================================
-# ===================== PARAMETERS (EDIT HERE) ================
-# ============================================================
+# ===================== CONFIGURATION ========================
 
-# --- Real rectified LEFT image (reference) ---
 LEFT_IMAGE_PATH = "cone0.png"
 
-# --- Synthesized MID view to evaluate (typically the fused result) ---
 SYNTH_MID_IMAGE_PATH = "out_view_synthesis/view_fused.png"
 
-# --- LEFT disparity map ---
 DISPARITY_LEFT_PATH = "cones_disparity_occlusion_filled_smoothed.png"
 
-# If your disparity file is 8-bit (0..255) encoding a range [DISP_MIN, DISP_MAX], set True.
-# If your disparity is already in pixels (float/16-bit already representing pixels), set False.
 DISP_IS_8BIT = True
 
-# Disparity decoding range used when exporting to 8-bit.
-# IMPORTANT: Use the SAME range as in your synthesis script.
-# Example from your synthesis config: [-51, -17]
 DISP_MIN = -51
 DISP_MAX = -17
 
-# Disparity sign convention:
-# If the decoded disparity is in the sense (xR - xL) and thus mostly negative, set DISP_SIGN_LEFT = -1.0
-# If it's already (xL - xR) (mostly positive), set DISP_SIGN_LEFT = +1.0
 DISP_SIGN_LEFT = -1.0
 
 # --- Mid-view position used for synthesis ---
-ALPHA = 0.5  # 0.0=left, 1.0=right
+ALPHA = 0.5 
 
-# --- Validity mask (auto) ---
+# --- Validity mask ---
 BLACK_THRESH = 5  # pixels <= threshold are considered invalid (holes/out-of-image)
 
 # --- IV-PSNR-like shift tolerance ---
@@ -68,8 +42,6 @@ SAVE_DEBUG = True
 DEBUG_DIR = "out_metrics_proxy"
 
 
-# ============================================================
-# ===================== UTILITIES =============================
 # ============================================================
 
 @dataclass
@@ -125,8 +97,6 @@ def ensure_same_size(ref: np.ndarray, img: np.ndarray, interp=cv2.INTER_LINEAR) 
 
 
 # ============================================================
-# ===================== PROXY REPROJECTION ====================
-# ============================================================
 
 def reproject_mid_to_left(
     mid_bgr: np.ndarray,
@@ -168,8 +138,6 @@ def reproject_mid_to_left(
     return reproj, inbounds
 
 
-# ============================================================
-# ===================== METRICS ===============================
 # ============================================================
 
 def build_valid_mask(ref_bgr: np.ndarray, img_bgr: np.ndarray, black_thresh: int) -> np.ndarray:
@@ -286,8 +254,6 @@ def compute_metrics(ref_bgr: np.ndarray, img_bgr: np.ndarray, mask: np.ndarray, 
 
 
 # ============================================================
-# ===================== PLOTS =================================
-# ============================================================
 
 def plot_psnr_bars(metrics: Dict[str, Metric], out_path: Path) -> None:
     labels = list(metrics.keys())
@@ -325,9 +291,7 @@ def plot_error_histogram(ref_bgr: np.ndarray, img_bgr: np.ndarray, mask: np.ndar
     plt.close()
 
 
-# ============================================================
 # ===================== MAIN ==================================
-# ============================================================
 
 def main() -> None:
     print("=== INFO-H518 — Q_V3 — View Synthesis Metrics (PROXY, adapted) ===")
